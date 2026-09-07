@@ -25,6 +25,22 @@ Never claim an action was performed unless it actually was.
 """
 
 def ask_ai(message, extra_context=""):
+    brain_url = os.environ.get("JARVIS_BRAIN_URL", "").rstrip("/")
+    brain_key = os.environ.get("JARVIS_BRAIN_KEY", "")
+
+    if brain_url and brain_key:
+        try:
+            r = requests.post(
+                brain_url + "/chat",
+                headers={"X-JARVIS-Key": brain_key},
+                json={"message": message},
+                timeout=60
+            )
+            r.raise_for_status()
+            return r.json().get("reply", "Sir, brain returned no reply.")
+        except Exception as e:
+            return f"Sir, my mobile brain is temporarily unavailable: {e}"
+
     response = requests.post(
         AI_URL,
         json={
@@ -46,9 +62,11 @@ def ask_ai(message, extra_context=""):
         },
         timeout=30
     )
+
     response.raise_for_status()
     data = response.json()
     return data["choices"][0]["message"]["content"].strip()
+
 
 def detect_tool(message):
     text = message.lower()
